@@ -10,25 +10,25 @@ Shaders for the new Windows Terminal
 
 ### Example Setting
 
-```json
-  // ...
-	"profiles": {
-		"defaults": {
-      // Add
-			"experimental.pixelShaderPath": "C:\\gitrepos\\windows-terminal-shaders\\crt.hlsl"
-		},
+```jsonc
+{
+  "profiles": {
+    "defaults": {
+      // Add your desired shader
+      "experimental.pixelShaderPath": "C:\\gitrepos\\windows-terminal-shaders\\crt.hlsl"
+    },
   }
-  	"keybindings": [
-		// ... It's recommended to add those two toggles for ease of use
-		{
-			"command": "toggleFocusMode",
-			"keys": "shift+f11"
-		},
-		{
-			"command": "toggleShaderEffects",
-			"keys": "shift+f10"
-		}
-	]
+    "keybindings": [
+    // It's recommended to add those two toggles for ease of use
+    {
+      "command": "toggleFocusMode",
+      "keys": "shift+f11"
+    },
+    {
+      "command": "toggleShaderEffects",
+      "keys": "shift+f10"
+    }
+  ]
 }
 ```
 
