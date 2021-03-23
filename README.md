@@ -10,6 +10,8 @@ Shaders for the new Windows Terminal
 
 ### Example Setting
 
+> Please add the lines you need to your own config, this example config only show the values that you need to add.
+
 ```jsonc
 {
   "profiles": {
@@ -17,8 +19,8 @@ Shaders for the new Windows Terminal
       // Add your desired shader
       "experimental.pixelShaderPath": "C:\\gitrepos\\windows-terminal-shaders\\crt.hlsl"
     },
-  }
-    "keybindings": [
+  },
+  "keybindings": [
     // It's recommended to add those two toggles for ease of use
     {
       "command": "toggleFocusMode",
