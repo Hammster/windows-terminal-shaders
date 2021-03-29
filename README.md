@@ -50,3 +50,20 @@ Shaders for the new Windows Terminal
 #define ENABLE_TINT 0
 #define DEBUG 0
 ```
+
+## [Transparent](./transparent.hlsl)
+
+Turn a specific color into transparent for use with `useAcrylic` and `acrylicOpacity` when xterm colors are enabled, like in vim themes.
+
+### Preview
+|![transparent not show](.github/transparent-1.png)|![transparent applie](.github/transparent-2.png)|
+|---|---|
+|xterm colors without shader|xterm colors with shader|
+
+### Settings
+
+Set the color value for the chromaKey used for transparency `float3(8.0f / 0xFF, 8.0f / 0xFF, 8.0f / 0xFF)` is the same as `rgb(8, 8, 8)` 
+
+```c++
+static const float3 chromaKey = float3(8.0f / 0xFF, 8.0f / 0xFF, 8.0f / 0xFF);
+```
