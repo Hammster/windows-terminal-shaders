@@ -12,8 +12,9 @@ cbuffer PixelShaderSettings {
 
 #define HUE_OFFSET 0.0f
 // As close to 1/6 as possible with float
-// #define CHANGE_RATE 0.16666667163372039794921875f
-#define CHANGE_RATE 0.01f
+#define CHANGE_RATE 0.16666667163372039794921875f
+// #define CHANGE_RATE 0.01f
+#define TOLERANCE 0.2f
 
 float3 rgb_to_hsv_no_clip(float3 RGB)
 {
@@ -34,7 +35,7 @@ float3 rgb_to_hsv_no_clip(float3 RGB)
     HSV.xy = 0;
     HSV.z = maxChannel;
     float delta = maxChannel - minChannel;             //Delta RGB value 
-    if (delta != 0) {                    // If gray, leave H & S at zero
+    if (delta >= TOLERANCE) {                    // If gray, leave H & S at zero
        HSV.y = delta / HSV.z;
        float3 delRGB;
        delRGB = (HSV.zzz - RGB + 3*delta) / (6.0*delta);
