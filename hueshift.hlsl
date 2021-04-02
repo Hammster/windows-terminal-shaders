@@ -11,7 +11,9 @@ cbuffer PixelShaderSettings {
 };
 
 #define HUE_OFFSET 0.0f
-#define CHANGE_RATE 0.1f
+// As close to 1/6 as possible with float
+// #define CHANGE_RATE 0.16666667163372039794921875f
+#define CHANGE_RATE 0.01f
 
 float3 rgb_to_hsv_no_clip(float3 RGB)
 {

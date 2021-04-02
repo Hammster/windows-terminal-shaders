@@ -58,7 +58,7 @@ Shaders for the new Windows Terminal
 Turn a specific color into transparent for use with `useAcrylic` and `acrylicOpacity` when xterm colors are enabled, like in vim themes.
 
 ### Preview
-|![transparent not show](.github/transparent-1.png)|![transparent applie](.github/transparent-2.png)|
+|![transparent not shown](.github/transparent-1.png)|![transparent applied](.github/transparent-2.png)|
 |---|---|
 |xterm colors without shader|xterm colors with shader|
 
@@ -68,4 +68,24 @@ Set the color value for the chromaKey used for transparency `float3(8.0f / 0xFF,
 
 ```c++
 static const float3 chromaKey = float3(8.0f / 0xFF, 8.0f / 0xFF, 8.0f / 0xFF);
+```
+
+## [Hue Shift](./hueshift.hlsl)
+
+Changes the hue of screen colors. This can apply a color correction similar to the tint knob of old TVs or it can be set to cycle the colors smoothly over time.
+
+### Preview
+|![hueshift not applied](.github/hueshift-1.png)|![hueshift applied](.github/hueshift-2.gif)|
+|---|---|
+|vintage colors without shader|vintage colors with shader|
+
+### Settings
+
+`HUE_OFFSET`  [0.0, 1.0)f : Adjust the hue to a specific offset.  
+`CHANGE_RATE` [0.0, 1.0)f : Changes the hue over time. For small values like 0.01f, this will cause a slow change over time and probably won't be very disruptive.
+
+```c++
+#define HUE_OFFSET 0.0f
+// As close to 1/6 as possible with float for 1 shift per second and full cycle in 6 seconds
+#define CHANGE_RATE 0.16666667163372039794921875f
 ```
