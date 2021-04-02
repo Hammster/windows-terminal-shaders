@@ -125,14 +125,14 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 	if(xy.x < -0.015f || xy.y < -0.015f) return float4(0.03f, 0.03f, 0.03f, 0.0f);
 	if(xy.x > 1.015f  || xy.y > 1.015f)  return float4(0.03f, 0.03f, 0.03f, 0.0f);
 	// Screen Border
-	if(xy.x < 0.001f  || xy.y < 0.001f)  return float4(0.0f, 0.0f, 0.0f, 0.0f);
-	if(xy.x > 0.999f  || xy.y > 0.999f)  return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	if(xy.x < -0.001f  || xy.y < -0.001f)  return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	if(xy.x > 1.001f  || xy.y > 1.001f)  return float4(0.0f, 0.0f, 0.0f, 0.0f);
 	#endif
 	
 	#if ENABLE_BLUR
 	Texture2D input = shaderTexture;
 	float4 color = shaderTexture.Sample(samplerState, xy) * 0.9;
-	color += Blur(input, xy, SCALED_GAUSSIAN_SIGMA) * 0.1;
+	color += Blur(shaderTexture, xy, SCALED_GAUSSIAN_SIGMA) * 0.1;
 	#else
 	float4 color = shaderTexture.Sample(samplerState, xy);
 	#endif
@@ -144,7 +144,7 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 	#if ENABLE_REFRESHLINE
 	float timeOver = fmod(Time / 5, 1);
 	float refreshLineColorTint = timeOver - xy.y;
-	if(xy.y > timeOver && xy.y - 0.03f < timeOver ) color.rgb += (refreshLineColorTint * 2.0f);
+	if(xy.y > timeOver && xy.y - 0.04f < timeOver ) color.rgb += (refreshLineColorTint * 2.0f);
 	#endif
 
 	// #if ENABLE_SCANLINES
@@ -179,7 +179,5 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 
 float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET
 {
-	float4 color = mainImage(pos, tex);
-
-	return color;
+	return mainImage(pos, tex);
 }
