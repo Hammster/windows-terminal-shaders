@@ -83,9 +83,10 @@ Changes the hue of screen colors. This can apply a color correction similar to t
 
 `HUE_OFFSET`  [0.0, 1.0)f : Adjust the hue to a specific offset.  
 `CHANGE_RATE` [0.0, 1.0)f : Changes the hue over time. For small values like 0.01f, this will cause a slow change over time and probably won't be very disruptive.
+`TOLERANCE`   [0.0, 1.0)f : Saturation% setpoint. All saturation levels greater or equal than this will be affected by the hue adjustments. This allows you to fix some of the gray scale colors such as those offten used by on-screen text.
 
 ```c++
 #define HUE_OFFSET 0.0f
-// As close to 1/6 as possible with float for 1 shift per second and full cycle in 6 seconds
-#define CHANGE_RATE 0.16666667163372039794921875f
+#define CHANGE_RATE 0.01f
+#define TOLERANCE 0.266f
 ```
