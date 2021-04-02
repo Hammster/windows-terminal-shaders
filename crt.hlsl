@@ -129,12 +129,11 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 	if(xy.x > 1.001f  || xy.y > 1.001f)  return float4(0.0f, 0.0f, 0.0f, 0.0f);
 	#endif
 	
-	#if ENABLE_BLUR
-	Texture2D input = shaderTexture;
-	float4 color = shaderTexture.Sample(samplerState, xy) * 0.9;
-	color += Blur(shaderTexture, xy, SCALED_GAUSSIAN_SIGMA) * 0.1;
-	#else
 	float4 color = shaderTexture.Sample(samplerState, xy);
+
+	#if ENABLE_BLUR
+	color *= 0.9;
+	color += Blur(shaderTexture, xy, SCALED_GAUSSIAN_SIGMA) * 0.1;
 	#endif
 
 	#if DEBUG
