@@ -2,6 +2,11 @@
 Texture2D shaderTexture;
 SamplerState samplerState;
 
+struct PSInput {
+  float4 pos : SV_POSITION;
+  float2 tex : TEXCOORD;
+};
+
 cbuffer PixelShaderSettings {
 	float  Time;
 	float  Scale;
@@ -11,6 +16,7 @@ cbuffer PixelShaderSettings {
 
 // Settings
 #define GRAIN_INTENSITY 0.02
+// #define BIT_DEPTH_PER_CHANNEL 2
 #define TINT_COLOR float4(1, 0.7f, 0, 0)
 #define ENABLE_SCANLINES 1
 #define ENABLE_REFRESHLINE 1
@@ -18,6 +24,11 @@ cbuffer PixelShaderSettings {
 #define ENABLE_CURVE 1
 #define ENABLE_TINT 1
 #define ENABLE_BLUR 1
+#define ENABLE_GRAYSCALE 1
+#define USE_INTENSITY 0
+#define USE_GLEAM 0
+#define USE_LUMINANCE 1
+#define USE_LUMA 0
 #define DEBUG 0
 
 // retro.hlsl
@@ -105,9 +116,80 @@ float4 Scanline(float4 color, float4 pos)
     }
 }
 
-float4 mainImage(float4 pos, float2 tex) : TARGET
+// http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
+float3 rgb2hsv(float3 c)
 {
-	float2 xy = tex.xy;
+    float4 K = float4(0.f, -1.f / 3.f, 2.f / 3.f, -1.f);
+    float4 p = c.g < c.b ? float4(c.bg, K.wz) : float4(c.gb, K.xy);
+    float4 q = c.r < p.x ? float4(p.xyw, c.r) : float4(c.r, p.yzx);
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1e-10;
+    return float3(abs(q.z + (q.w - q.y) / (6.f * d + e)), d / (q.x + e), q.x);
+}
+
+float3 hsv2rgb(float3 c)
+{
+    float4 K = float4(1.f, 2.f / 3.f, 1.f / 3.f, 3.f);
+    float3 p = abs(frac(c.xxx + K.xyz) * 6.f - K.www);
+    return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
+}
+
+float3 rgb2intensity(float3 c)
+{
+	return (c.r + c.g + c.b) / 3.f;
+}
+
+float3 gamma(float3 c)
+{
+	return pow(c, 1/2.2f);
+}
+
+float3 rgb2gleam(float3 c)
+{
+	c = gamma(c);
+	return rgb2intensity(c);
+}
+
+float3 rgb2luminance(float3 c)
+{
+	return 0.3f * c.r + 0.59f * c.g + 0.11f * c.b;
+}
+
+float3 rgb2luma(float3 c)
+{
+	c = gamma(c);
+	return 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+}
+
+float4 ConvertToGrayscale(float4 color)
+{
+	// float3 hsv = rgb2hsv(color.rgb);
+
+	// // hsv.z = round(hsv.z * BIT_DEPTH_PER_CHANNEL) / BIT_DEPTH_PER_CHANNEL;
+	// if		(hsv.z == 1.0f)	{ color.rgb = float3(1.f, 1.f, 1.f); }
+	// else if (hsv.z == 0.5f) { color.rgb = float3(0.5f, 0.5f, 0.5f); }
+	// else if (hsv.z == 0.f) 	{ color.rgb = float3(0.f, 0.f, 0.f); }
+	// else					{ color.rgb = float3(1.f, 0.f, 1.f); }
+
+	// color.rgb = hsv2rgb(hsv);
+
+	#if USE_INTENSITY
+	color.rgb = rgb2intensity(color.rgb);
+	#elif USE_GLEAM
+	color.rgb = rgb2gleam(color.rgb);
+	#elif USE_LUMINANCE
+	color.rgb = rgb2luminance(color.rgb);
+	#elif USE_LUMA
+	color.rgb = rgb2luma(color.rgb);
+	#endif
+
+	return color;
+}
+
+float4 main(PSInput input) : SV_TARGET
+{
+	float2 xy = input.tex.xy;
 	
 	#if ENABLE_CURVE
 	// TODO: add control variable for transform intensity
@@ -131,13 +213,17 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 	
 	float4 color = shaderTexture.Sample(samplerState, xy);
 
+	#if DEBUG
+	if(xy.x < 0.5f) return color;
+	#endif
+
 	#if ENABLE_BLUR
 	color *= 0.9;
 	color += Blur(shaderTexture, xy, SCALED_GAUSSIAN_SIGMA) * 0.1;
 	#endif
 
-	#if DEBUG
-	if(xy.x < 0.5f) return color;
+	#if ENABLE_GRAYSCALE
+	color = ConvertToGrayscale(color);
 	#endif
 
 	#if ENABLE_REFRESHLINE
@@ -152,7 +238,7 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 	// #endif
 
 	#if ENABLE_SCANLINES
-	color = Scanline(color, pos);
+	color = Scanline(color, input.pos);
 	#endif
 
 	#if ENABLE_TINT
@@ -162,7 +248,7 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 	#endif
 
 	#if ENABLE_GRAIN
-	float3 m = float3(tex, Time % 5 / 5) + 1.;
+	float3 m = float3(input.tex, Time % 5 / 5) + 1.;
 	float state = permute(permute(m.x) + m.y) + m.z;
 
 	float p = 0.95 * rand(state) + 0.025;
@@ -174,9 +260,4 @@ float4 mainImage(float4 pos, float2 tex) : TARGET
 	#endif
 
 	return color;
-}
-
-float4 main(float4 pos : SV_POSITION, float2 tex : TEXCOORD) : SV_TARGET
-{
-	return mainImage(pos, tex);
 }

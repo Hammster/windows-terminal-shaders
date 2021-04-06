@@ -37,19 +37,39 @@ Shaders for the new Windows Terminal
 ## [CRT](./crt.hlsl)
 
 ### Preview
-|![crt1](.github/crt-1.png)|![crt1](.github/crt-2.png)|![crt1](.github/crt-3.png)|
+|![crt1](.github/crt-1.png)|![crt1](.github/crt-2.png)|![crt1](.github/crt-3.png)|![crt4](.github/crt-4.png)|
+|---|---|---|---|
+|Default|Green Monochrome|Ember Monochrome|With Luminance, Blur, and Clamp|
+
+### Grayscale conversion
+|![crt vintage](.github/crt-vintage.png)|![crt default](.github/crt-default.png)|![crt intensity](.github/crt-intensity.png)|
 |---|---|---|
-|Default|Green Monochrome|Ember Monochrome|
+|Vintage Color Scheme|Default without Grayscale conversion|Intensity Strategy†|
+
+|![crt gleam](.github/crt-gleam.png)|![crt luminance](.github/crt-luminance.png)|![crt luma](.github/crt-luma.png)|
+|---|---|---|
+|Gleam Strategy†|Luminance Strategy†|Luma Strategy†|
+
+† The order of [SGR ANSI Escape Codes](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) have been adjusted to demonstrate a smooth transition from dark to light, but the order will change because there is no perfect way to convert color to grayscale. There are advantages and disadvantages of all strategies.
 
 ### Settings
+When using a monochorme tint, there should be some considerations made. The Vintage color scheme is probably the best choice for trying to capture a nostalgic feel. Other color schemes, while still being monochormatic will have different brightness levels which may not correspond with expectations. If ENABLE_BIT_DEPTH_CLAMP is used, there are four different strategies, one of which should be selected. Intensity, Gleam, Luminance, and Luma are calculated using the formulas on this [Color-to-Grayscale](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0029740) paper. While there isn't a perfect conversion technique, and the results change considerably depending on the color scheme used, Luminance seems to provide the smoothest transitions using Vintage as the base. It is also recommended that the Windows Terminal [fontFace](https://docs.microsoft.com/en-us/windows/terminal/customize-settings/profile-appearance#font-face) and [antialiasingMode](https://docs.microsoft.com/en-us/windows/terminal/customize-settings/profile-advanced#text-antialiasing) settings are adjusted to improve readability as desired. Lastly, this is applying a pixel shader to the entire window. Depending on the system hardware and the size of the screen, this might be a very expensive shader to apply at max settings.
+
 ```c++
+// Settings
 #define GRAIN_INTENSITY 0.02
 #define TINT_COLOR float4(1, 0.7f, 0, 0)
 #define ENABLE_SCANLINES 1
 #define ENABLE_REFRESHLINE 1
-#define ENABLE_NOISE 1
+#define ENABLE_GRAIN 1
 #define ENABLE_CURVE 1
-#define ENABLE_TINT 0
+#define ENABLE_TINT 1
+#define ENABLE_BLUR 1
+#define ENABLE_BIT_DEPTH_CLAMP 1
+#define USE_INTENSITY 0
+#define USE_GLEAM 0
+#define USE_LUMINANCE 1
+#define USE_LUMA 0
 #define DEBUG 0
 ```
 
@@ -83,7 +103,7 @@ Changes the hue of screen colors. This can apply a color correction similar to t
 
 `HUE_OFFSET`  [0.0, 1.0)f : Adjust the hue to a specific offset.  
 `CHANGE_RATE` [0.0, 1.0)f : Changes the hue over time. For small values like 0.01f, this will cause a slow change over time and probably won't be very disruptive.
-`TOLERANCE`   [0.0, 1.0)f : Saturation% setpoint. All saturation levels greater or equal than this will be affected by the hue adjustments. This allows you to fix some of the gray scale colors such as those offten used by on-screen text.
+`TOLERANCE`   [0.0, 1.0)f : Saturation% setpoint. All saturation levels greater or equal than this will be affected by the hue adjustments. This allows you to fix some of the grayscale colors such as those offten used by on-screen text.
 
 ```c++
 #define HUE_OFFSET 0.0f
