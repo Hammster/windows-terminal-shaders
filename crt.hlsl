@@ -22,12 +22,18 @@ cbuffer PixelShaderSettings {
 #define ENABLE_GRAIN 1
 #define ENABLE_CURVE 1
 #define ENABLE_TINT 1
-#define ENABLE_GRAYSCALE 1
+#define ENABLE_GRAYSCALE 0
 #define USE_INTENSITY 0
 #define USE_GLEAM 0
 #define USE_LUMINANCE 1
 #define USE_LUMA 0
 #define DEBUG 0
+
+// Configures the original behavior for tint
+#if ENABLE_TINT && !ENABLE_GRAYSCALE
+#define ENABLE_GRAYSCALE 1
+#define USE_INTENSITY 1
+#endif
 
 // Grain Lookup Table
 #define a0  0.151015505647689
@@ -158,8 +164,6 @@ float4 main(PSInput input) : SV_TARGET
 	#endif
 
 	#if ENABLE_TINT
-	float grayscale = (color.r + color.g + color.b) / 3.f;
-	color = float4(grayscale, grayscale, grayscale, 0);
 	color *= tint;
 	#endif
 
