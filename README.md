@@ -41,7 +41,7 @@ Shaders for the new Windows Terminal
 |---|---|---|---|
 |Default|Green Monochrome|Ember Monochrome|With Luminance, Grayscale, Tint, Grain, and Curve|
 
-### Grayscale conversion ‡
+### Grayscale conversion
 |![crt vintage](.github/crt-vintage.png)|![crt default](.github/crt-default.png)|![crt intensity](.github/crt-intensity.png)|
 |---|---|---|
 |Vintage Color Scheme|Default without Grayscale conversion|Intensity Strategy †|
@@ -52,7 +52,12 @@ Shaders for the new Windows Terminal
 
 † The order of [SGR ANSI Escape Codes](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors) have been adjusted to demonstrate a smooth transition from dark to light, but the order will change because there is no perfect way to convert color to grayscale. There are advantages and disadvantages of all strategies.
 
-‡ Some of these screenshots have retro.hlsl techniques applied, which for licensing reasons are currently not part of this shader, so the result shown can't be completely replicated, but they are representative of how grayscale strategies will be applied.
+-----
+
+#### Regarding Retro.hlsl license
+This shader takes advantage of some of the techniques showcased in [Retro.hlsl](https://github.com/microsoft/terminal/blob/fb597ed304ec6eef245405c9652e9b8a029b821f/samples/PixelShaders/Retro.hlsl), for applying the blur and scanlines. These changes are MIT License and so therefore not being committed to the main branch until licensing needs can be addressed. This branch is so that these changes can be maintained and tracked until this can be resolved.
+
+-----
 
 ### Settings
 When using a monochorme tint, there should be some considerations made. The Vintage color scheme is probably the best choice for trying to capture a nostalgic feel. Other color schemes, while still being monochormatic will have different brightness levels which may not correspond with expectations. If ENABLE_GRAYSCALE is used, there are four different strategies, one of which should be selected. Intensity, Gleam, Luminance, and Luma are calculated using the formulas on this [Color-to-Grayscale](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0029740) paper. While there isn't a perfect conversion technique, and the results change considerably depending on the color scheme used, Luminance seems to provide the smoothest transitions using Vintage as the base. It is also recommended that the Windows Terminal [fontFace](https://docs.microsoft.com/en-us/windows/terminal/customize-settings/profile-appearance#font-face) and [antialiasingMode](https://docs.microsoft.com/en-us/windows/terminal/customize-settings/profile-advanced#text-antialiasing) settings are adjusted to improve readability as desired. Lastly, this is applying a pixel shader to the entire window. Depending on the system hardware and the size of the screen, this might be a very expensive shader to apply at max settings.
@@ -61,10 +66,11 @@ When using a monochorme tint, there should be some considerations made. The Vint
 // Settings
 #define GRAIN_INTENSITY 0.02
 #define TINT_COLOR float4(1, 0.7f, 0, 0)
-#define ENABLE_SCANLINES 0
+#define ENABLE_SCANLINES 1
 #define ENABLE_REFRESHLINE 1
 #define ENABLE_GRAIN 1
 #define ENABLE_CURVE 1
+#define ENABLE_BLUR 1
 #define ENABLE_TINT 1
 #define ENABLE_GRAYSCALE 1
 #define USE_INTENSITY 0

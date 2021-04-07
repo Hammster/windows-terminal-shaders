@@ -17,12 +17,13 @@ cbuffer PixelShaderSettings {
 // Settings
 #define GRAIN_INTENSITY 0.02
 #define TINT_COLOR float4(1, 0.7f, 0, 0)
-#define ENABLE_SCANLINES 0
-#define ENABLE_REFRESHLINE 0
+#define ENABLE_SCANLINES 1
+#define ENABLE_REFRESHLINE 1
 #define ENABLE_GRAIN 1
 #define ENABLE_CURVE 1
+#define ENABLE_BLUR 1
 #define ENABLE_TINT 1
-#define ENABLE_GRAYSCALE 0
+#define ENABLE_GRAYSCALE 1
 #define USE_INTENSITY 0
 #define USE_GLEAM 0
 #define USE_LUMINANCE 1
@@ -34,6 +35,13 @@ cbuffer PixelShaderSettings {
 #define ENABLE_GRAYSCALE 1
 #define USE_INTENSITY 1
 #endif
+
+// retro.hlsl
+#define SCANLINE_FACTOR 0.5
+#define SCALED_SCANLINE_PERIOD Scale
+#define SCALED_GAUSSIAN_SIGMA (2.0*Scale)
+
+static const float M_PI = 3.14159265f;
 
 // Grain Lookup Table
 #define a0  0.151015505647689
@@ -55,6 +63,62 @@ float rand(inout float state)
 {
 	state = permute(state);
 	return frac(state / 41.0f);
+}
+
+// retro.hlsl
+float Gaussian2D(float x, float y, float sigma)
+{
+    return 1/(sigma*sqrt(2*M_PI)) * exp(-0.5*(x*x + y*y)/sigma/sigma);
+}
+
+float4 Blur(Texture2D input, float2 tex_coord, float sigma)
+{
+    uint width, height;
+    shaderTexture.GetDimensions(width, height);
+
+    float texelWidth = 1.0f/width;
+    float texelHeight = 1.0f/height;
+
+    float4 color = { 0, 0, 0, 0 };
+
+    int sampleCount = 13;
+
+    for (int x = 0; x < sampleCount; x++)
+    {
+        float2 samplePos = { 0, 0 };
+
+        samplePos.x = tex_coord.x + (x - sampleCount/2) * texelWidth;
+        for (int y = 0; y < sampleCount; y++)
+        {
+            samplePos.y = tex_coord.y + (y - sampleCount/2) * texelHeight;
+            if (samplePos.x <= 0 || samplePos.y <= 0 || samplePos.x >= width || samplePos.y >= height) continue;
+
+            color += input.Sample(samplerState, samplePos) * Gaussian2D((x - sampleCount/2), (y - sampleCount/2), sigma);
+        }
+    }
+
+    return color;
+}
+
+float SquareWave(float y)
+{
+    return 1 - (floor(y / SCALED_SCANLINE_PERIOD) % 2) * SCANLINE_FACTOR;
+}
+
+float4 Scanline(float4 color, float4 pos)
+{
+    float wave = SquareWave(pos.y);
+
+    // TODO:GH#3929 make this configurable.
+    // Remove the && false to draw scanlines everywhere.
+    if (length(color.rgb) < 0.2 && false)
+    {
+        return color + wave*0.1;
+    }
+    else
+    {
+        return color * wave;
+    }
 }
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
@@ -148,6 +212,11 @@ float4 main(PSInput input) : SV_TARGET
 	if(xy.x < 0.5f) return color;
 	#endif
 
+	#if ENABLE_BLUR
+	color *= 0.9;
+	color += Blur(shaderTexture, xy, SCALED_GAUSSIAN_SIGMA) * 0.1;
+	#endif
+	
 	#if ENABLE_GRAYSCALE
 	color = ConvertToGrayscale(color);
 	#endif
@@ -159,8 +228,7 @@ float4 main(PSInput input) : SV_TARGET
 	#endif
 
 	#if ENABLE_SCANLINES
-	// TODO: fixing the precision issue so that scanlines are always 1px
-	if(floor(xy.y * 1000) % 2) color *= scanlineTint;
+	color = Scanline(color, input.pos);
 	#endif
 
 	#if ENABLE_TINT
