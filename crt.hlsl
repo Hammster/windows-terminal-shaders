@@ -22,24 +22,37 @@ cbuffer PixelShaderSettings : register(b0) {
   float4 Background;
 };
 
-// Settings
-#define GRAIN_INTENSITY 0.02f
-#define TINT_COLOR float4(1, 0.7f, 0, 0)
-#define ENABLE_SCANLINES 1
-#define ENABLE_REFRESHLINE 1
-#define ENABLE_GRAIN 1
+// Options
 #define ENABLE_CURVE 1
-#define ENABLE_BLUR 1
 #define ENABLE_BLOOM 1
+#define ENABLE_BLUR 1
+#define ENABLE_GRAYSCALE 1
+#define ENABLE_REFRESHLINE 1
+#define ENABLE_SCANLINES 1
+#define ENABLE_TINT 1
+#define ENABLE_GRAIN 1
+#define DEBUG 0
+
+// Settings - Bloom
 #define BLOOM_STRENGTH 0.8
 #define BLOOM_OFFSET 0.002	
-#define ENABLE_TINT 1
-#define ENABLE_GRAYSCALE 1
+
+// Settings - Blur
+#define BLUR_MULTIPLIER 1.05
+#define BLUR_STRENGTH 0.3
+#define BLUR_OFFSET 0.003
+
+// Settings - Grayscale Strategies
 #define USE_INTENSITY 0
 #define USE_GLEAM 0
 #define USE_LUMINANCE 1
 #define USE_LUMA 0
-#define DEBUG 0
+
+// Settings - Tint
+#define TINT_COLOR float4(1, 0.7f, 0, 0)
+
+// Settings - Gain
+#define GRAIN_INTENSITY 0.02f
 
 // retro.hlsl
 #define SCANLINE_FACTOR 0.5f
@@ -155,17 +168,17 @@ float4 Bloom(float4 c, Texture2D input, float2 uv)
   return c + bloom_mask;
 }
 
-float BlurWeights[9]={0,0.092,0.081,0.071,0.061,0.051,0.041,0.031,0.021};
+static const float BlurWeights[9]={0.0,0.092,0.081,0.071,0.061,0.051,0.041,0.031,0.021};
 
 float4 BlurH(float4 c, Texture2D input, float2 uv)
 {
   float3 screen =
     input.Sample(samplerState, uv).rgb*0.102;
   for (int i = 1; i < 9; i++) screen +=
-    input.Sample(samplerState, uv+( i*BLOOM_OFFSET,0)).rgb*BlurWeights[i];
+    input.Sample(samplerState, uv+float2( i*BLUR_OFFSET,0)).rgb*BlurWeights[i];
   for (int i = 1; i < 9; i++) screen +=
-    input.Sample(samplerState, uv+(-i*BLOOM_OFFSET,0)).rgb*BlurWeights[i];
-  return float4(screen*1.05,1);
+    input.Sample(samplerState, uv+float2(-i*BLUR_OFFSET,0)).rgb*BlurWeights[i];
+  return float4(screen*BLUR_MULTIPLIER,1);
 }
 
 float4 BlurV(float4 c, Texture2D input, float2 uv)
@@ -173,16 +186,16 @@ float4 BlurV(float4 c, Texture2D input, float2 uv)
   float3 screen =
     input.Sample(samplerState, uv).rgb*0.102;
   for (int i = 1; i < 9; i++) screen +=
-    input.Sample(samplerState, uv+(0, i*BLOOM_OFFSET)).rgb*BlurWeights[i];
+    input.Sample(samplerState, uv+float2(0, i*BLUR_OFFSET)).rgb*BlurWeights[i];
   for (int i = 1; i < 9; i++) screen +=
-    input.Sample(samplerState, uv+(0,-i*BLOOM_OFFSET)).rgb*BlurWeights[i];
-  return float4(screen*1.05,1);
+    input.Sample(samplerState, uv+float2(0,-i*BLUR_OFFSET)).rgb*BlurWeights[i];
+  return float4(screen*BLUR_MULTIPLIER,1);
 }
 
 float4 Blur(float4 c, Texture2D input, float2 uv)
 {
-  float4 blur = c - (BlurH(c, input, uv) + BlurV(c, input, uv))/2;
-  float4 blur_mask = blur * BLOOM_STRENGTH;
+  float4 blur = (BlurH(c, input, uv) + BlurV(c, input, uv))/2 - c;
+  float4 blur_mask = blur * BLUR_STRENGTH;
   return c + blur_mask;
 }
 
