@@ -112,3 +112,24 @@ Set the color value for the chromaKey used for transparency `float3(8.0f / 0xFF,
 ```c++
 static const float3 chromaKey = float3(8.0f / 0xFF, 8.0f / 0xFF, 8.0f / 0xFF);
 ```
+
+## [Hue Shift](./hueshift.hlsl)
+
+Changes the hue of screen colors. This can apply a color correction similar to the tint knob of old TVs or it can be set to cycle the colors smoothly over time.
+
+### Preview
+|![hueshift not applied](.github/hueshift-1.png)|![hueshift applied](.github/hueshift-2.gif)|
+|---|---|
+|vintage colors without shader|vintage colors with shader|
+
+### Settings
+
+`HUE_OFFSET`  [0.0, 1.0)f : Adjust the hue to a specific offset.  
+`CHANGE_RATE` [0.0, 1.0)f : Changes the hue over time. For small values like 0.01f, this will cause a slow change over time and probably won't be very disruptive.
+`TOLERANCE`   [0.0, 1.0)f : Saturation% setpoint. All saturation levels greater or equal than this will be affected by the hue adjustments. This allows you to fix some of the grayscale colors such as those offten used by on-screen text.
+
+```c++
+#define HUE_OFFSET 0.0f
+#define CHANGE_RATE 0.01f
+#define TOLERANCE 0.266f
+```
