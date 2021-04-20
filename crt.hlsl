@@ -24,14 +24,18 @@ cbuffer PixelShaderSettings : register(b0) {
 
 // Shader Options
 #define ENABLE_CURVE            1
+#define ENABLE_OVERSCAN         1
 #define ENABLE_BLOOM            1
 #define ENABLE_BLUR             1
 #define ENABLE_GRAYSCALE        1
+#define ENABLE_BLACKLEVEL       1
 #define ENABLE_REFRESHLINE      1
-#define ENABLE_SCANLINES        0
+#define ENABLE_SCANLINES        1
 #define ENABLE_TINT             1
 #define ENABLE_GRAIN            1
-#define ENABLE_BLACKLEVEL       1
+
+// Settings - Overscan
+#define OVERSCAN_PERCENTAGE     0.02
 
 // Settings - Bloom
 #define BLOOM_OFFSET            0.0015
@@ -39,7 +43,7 @@ cbuffer PixelShaderSettings : register(b0) {
 
 // Settings - Blur
 #define BLUR_MULTIPLIER         1.05
-#define BLUR_STRENGTH           0.3
+#define BLUR_STRENGTH           0.2
 #define BLUR_OFFSET             0.003
 
 // Settings - Grayscale
@@ -62,8 +66,8 @@ cbuffer PixelShaderSettings : register(b0) {
 #define TINT_GREEN_2            float3(0.0, 1.0, 0.2)
 #define TINT_APPLE_IIc          float3(0.4, 1.0, 0.4) // P24 phpsphor
 #define TINT_GREEN_3            float3(0.0, 1.0, 0.4)
-#define TINT_WARM_1             float3(1.0, 0.9, 0.8)
-#define TINT_COOL_1             float3(0.8, 0.9, 1.0)
+#define TINT_WARM               float3(1.0, 0.9, 0.8)
+#define TINT_COOL               float3(0.8, 0.9, 1.0)
 
 // Settings - Gain
 #define GRAIN_INTENSITY         0.02
@@ -97,7 +101,7 @@ cbuffer PixelShaderSettings : register(b0) {
 // minumum output which renders during development.
 
 // Settings - Debug
-#define DEBUG                   0
+#define DEBUG                   1
 //#define DEBUG_ROTATION          0.25
 //#define DEBUG_SEGMENTS          1
 //#define DEBUG_OFFSET            0.425
@@ -128,20 +132,44 @@ float2 transformCurve(float2 uv) {
 }
 #endif
 
-#if ENABLE_BLOOM
-float4 bloom(float4 c, float2 uv)
+#if ENABLE_OVERSCAN
+// Modifies uv
+float4 overscan(float4 color, in float2 screenuv, out float2 uv)
 {
-  float4 bloom = c - shaderTexture.Sample(samplerState, uv + float2(-BLOOM_OFFSET, 0) * Scale);
-  float4 bloom_mask = bloom * BLOOM_STRENGTH;
+  // Overscan Region
+  uv = screenuv;
+  uv -= 0.5;
+  uv *= 1/(1-OVERSCAN_PERCENTAGE);
+  uv += 0.5;
+
+  // The scaler was found through trial and error, but the result seems to work
+  // for all the color schemes I tried. I think that Background should be
+  // providing the same values as if the texture was sampled, but it doesn't seem
+  // to do so. On the otherhand, I can also see a need for the actual Background
+  // to be passed into the shader. Maybe this just needs more documentation.
+  // SHADERed seems to have a problem with this in the preview window, but the
+  // Pixel Inspect shows the right thing.
+  if (uv.x < 0.000 | uv.y < 0.000) { return saturate(float4(Background.rgb, 0)*0.1); }
+  if (uv.y > 1.000 | uv.y > 1.000) { return saturate(float4(Background.rgb, 0)*0.1); }
+  
+  return float4(color);
+}
+#endif
+
+#if ENABLE_BLOOM
+float3 bloom(float3 color, float2 uv)
+{
+  float3 bloom = color - shaderTexture.Sample(samplerState, uv + float2(-BLOOM_OFFSET, 0) * Scale).rgb;
+  float3 bloom_mask = bloom * BLOOM_STRENGTH;
   //return bloom_mask;
-  return saturate(c + bloom_mask);
+  return saturate(color + bloom_mask);
 }
 #endif
 
 #if ENABLE_BLUR
 static const float blurWeights[9]={0.0, 0.092, 0.081, 0.071, 0.061, 0.051, 0.041, 0.031, 0.021};
 
-float4 blurH(float4 c, float2 uv)
+float3 blurH(float3 c, float2 uv)
 {
   float3 screen =
     shaderTexture.Sample(samplerState, uv).rgb * 0.102;
@@ -149,10 +177,10 @@ float4 blurH(float4 c, float2 uv)
     shaderTexture.Sample(samplerState, uv + float2( i * BLUR_OFFSET, 0)).rgb * blurWeights[i];
   for (int i = 1; i < 9; i++) screen +=
     shaderTexture.Sample(samplerState, uv + float2(-i * BLUR_OFFSET, 0)).rgb * blurWeights[i];
-  return float4(screen * BLUR_MULTIPLIER, 1);
+  return screen * BLUR_MULTIPLIER;
 }
 
-float4 blurV(float4 c, float2 uv)
+float3 blurV(float3 c, float2 uv)
 {
   float3 screen =
     shaderTexture.Sample(samplerState, uv).rgb * 0.102;
@@ -160,15 +188,15 @@ float4 blurV(float4 c, float2 uv)
     shaderTexture.Sample(samplerState, uv + float2(0,  i * BLUR_OFFSET)).rgb * blurWeights[i];
   for (int i = 1; i < 9; i++) screen +=
     shaderTexture.Sample(samplerState, uv + float2(0, -i * BLUR_OFFSET)).rgb * blurWeights[i];
-  return float4(screen * BLUR_MULTIPLIER, 1);
+  return screen * BLUR_MULTIPLIER;
 }
 
-float4 blur(float4 c, float2 uv)
+float3 blur(float3 color, float2 uv)
 {
-  float4 blur = (blurH(c, uv) + blurV(c, uv)) / 2 - c;
-  float4 blur_mask = blur * BLUR_STRENGTH;
+  float3 blur = (blurH(color, uv) + blurV(color, uv)) / 2 - color;
+  float3 blur_mask = blur * BLUR_STRENGTH;
   //return blur_mask;
-  return saturate(c + blur_mask);
+  return saturate(color + blur_mask);
 }
 #endif
 
@@ -209,7 +237,7 @@ float3 rgb2luma(float3 c)
   return gamma(c);
 }
 
-float4 grayscale(float4 color)
+float3 grayscale(float3 color)
 {
   #if GRAYSCALE_INTENSITY
   color.rgb = saturate(rgb2intensity(color.rgb));
@@ -228,7 +256,7 @@ float4 grayscale(float4 color)
 #endif
 
 #if ENABLE_BLACKLEVEL
-float4 blacklevel(float4 color)
+float3 blacklevel(float3 color)
 {
 	color.rgb -= BLACKLEVEL_FLOOR;
 	color.rgb = saturate(color.rgb);
@@ -238,18 +266,18 @@ float4 blacklevel(float4 color)
 #endif
 
 #if ENABLE_REFRESHLINE
-float4 refreshLines(float4 c, float2 uv)
+float3 refreshLines(float3 color, float2 uv)
 {
   float timeOver = fmod(Time / 5, 1.5) - 0.5;
   float refreshLineColorTint = timeOver - uv.y;
-  if(uv.y > timeOver && uv.y - 0.03 < timeOver ) c.rgb += (refreshLineColorTint * 2.0);
-  return saturate(c);
+  if(uv.y > timeOver && uv.y - 0.03 < timeOver ) color.rgb += (refreshLineColorTint * 2.0);
+  return saturate(color);
 }
 #endif
 
 #if ENABLE_SCANLINES
 // retro.hlsl
-#define SCANLINE_FACTOR 0.5
+#define SCANLINE_FACTOR 0.3
 #define SCALED_SCANLINE_PERIOD Scale
 
 float squareWave(float y)
@@ -257,7 +285,7 @@ float squareWave(float y)
   return 1 - (floor(y / SCALED_SCANLINE_PERIOD) % 2) * SCANLINE_FACTOR;
 }
 
-float4 scanlines(float4 color, float2 pos)
+float3 scanlines(float3 color, float2 pos)
 {
   float wave = squareWave(pos.y);
 
@@ -276,7 +304,7 @@ float4 scanlines(float4 color, float2 pos)
 #endif
 
 #if ENABLE_TINT
-float4 tint(float4 color)
+float3 tint(float3 color)
 {
 	color.rgb *= TINT_COLOR;
 	return saturate(color);
@@ -303,7 +331,7 @@ float rand(inout float state)
   return frac(state / 41.0);
 }
 
-float4 grain(float4 color, float2 uv)
+float3 grain(float3 color, float2 uv)
 {
   float3 m = float3(uv, Time % 5 / 5) + 1.0;
   float state = permute(permute(m.x) + m.y) + m.z;
@@ -346,51 +374,64 @@ float4 main(PSInput pin) : SV_TARGET {
 
   // TODO: add monitor visuals and make colors static consts
   // Outer Box
-  if(uv.x < -0.025 || uv.y < -0.025) return float4(0.00, 0.00, 0.00, 1.0); 
-  if(uv.x >  1.025 || uv.y >  1.025) return float4(0.00, 0.00, 0.00, 1.0); 
+  if(uv.x <  -0.025 || uv.y <  -0.025) return float4(0.00, 0.00, 0.00, 1.0); 
+  if(uv.x >   1.025 || uv.y >   1.025) return float4(0.00, 0.00, 0.00, 1.0); 
   // Bezel
-  if(uv.x < -0.015 || uv.y < -0.015) return float4(0.03, 0.03, 0.03, 1.0);
-  if(uv.x >  1.015 || uv.y >  1.015) return float4(0.03, 0.03, 0.03, 1.0);
+  if(uv.x <  -0.015 || uv.y <  -0.015) return float4(0.03, 0.03, 0.03, 1.0);
+  if(uv.x >   1.015 || uv.y >   1.015) return float4(0.03, 0.03, 0.03, 1.0);
   // Screen Border
-  if(uv.x < -0.001 || uv.y < -0.001) return float4(0.00, 0.00, 0.00, 1.0);
-  if(uv.x >  1.001 || uv.y >  1.001) return float4(0.00, 0.00, 0.00, 1.0);
+  if(uv.x <  -0.001 || uv.y <  -0.001) return float4(0.00, 0.00, 0.00, 1.0);
+  if(uv.x >   1.001 || uv.y >   1.001) return float4(0.00, 0.00, 0.00, 1.0);
   #endif
   
-  uv = saturate(uv);
-  
-  // If no options are selected, this will just display as normal
-  float4 color = shaderTexture.Sample(samplerState, uv).rgba;
-  
+  // Temporary color to be substituted
+  float4 color = float4(1,0,1,-1);
+
+  // We need to track two different uv's. The screen uv is effectively
+  // the CRT glass. We also want to track uv for when we sample from the
+  // texture.
+  float2 screenuv = uv;
+  #if ENABLE_OVERSCAN
+  // Modifies uv while screenuv remains the same.
+  color = overscan(color, screenuv, uv);
+  #endif
+
+  // If no options are selected, this will just display as normal.
+  // This must come after we've adjusted the uv for OVERSCAN.
+  if (color.a < 0) {
+    color = shaderTexture.Sample(samplerState, uv);
+  }
+   
   #if ENABLE_BLOOM
-  color = bloom(color, uv);
+  color.rgb = bloom(color.rgb, uv);
   #endif
   
   #if ENABLE_BLUR
-  color = blur(color, uv);
+  color.rgb = blur(color.rgb, uv);
   #endif
   
   #if ENABLE_GRAYSCALE
-  color = grayscale(color);
+  color.rgb = grayscale(color.rgb);
   #endif
   
   #if ENABLE_BLACKLEVEL
-  color = blacklevel(color);
+  color.rgb = blacklevel(color.rgb);
   #endif
   
   #if ENABLE_REFRESHLINE
-  color = refreshLines(color, uv);
+  color.rgb = refreshLines(color.rgb, screenuv);
   #endif
   
   #if ENABLE_SCANLINES
-  color = scanlines(color, pos);
+  color.rgb = scanlines(color.rgb, pos);
   #endif
   
   #if ENABLE_TINT
-  color = tint(color);
+  color.rgb = tint(color.rgb);
   #endif
   
   #if ENABLE_GRAIN
-  color = grain(color, uv);
+  color.rgb = grain(color.rgb, screenuv);
   #endif
   
   return color;

@@ -21,7 +21,7 @@
 			<itemvalues>
 				<value variable="Time" for="Screen">
 					<row>
-						<value>125.780273</value>
+						<value>0.0</value>
 					</row>
 				</value>
 				<value variable="Scale" for="Screen">
@@ -31,7 +31,7 @@
 				</value>
 				<value variable="Resolution" for="Screen">
 					<row>
-						<value>1478</value>
+						<value>647</value>
 						<value>393</value>
 					</row>
 				</value>
@@ -67,13 +67,14 @@
 		</pass>
 	</pipeline>
 	<objects>
-		<object type="texture" path="SHADERed\sample.png" vflip="true" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat">
+		<object type="texture" path="SHADERed\sample.png" vflip="true" min_filter="Linear" mag_filter="Nearest" wrap_s="ClampToEdge" wrap_t="ClampToEdge">
 			<bind slot="0" name="WindowsTerminal" />
 		</object>
 	</objects>
 	<cameras />
 	<settings>
 		<entry type="property" name="WindowsTerminal" item="pipe" />
+		<entry type="file" name="WindowsTerminal" shader="ps" />
 		<entry type="pinned" name="Scale" owner="WindowsTerminal" />
 		<entry type="pinned" name="Background" owner="WindowsTerminal" />
 		<entry type="camera" fp="false">
@@ -83,7 +84,7 @@
 			<roll>360</roll>
 		</entry>
 		<entry type="clearcolor" r="0" g="0" b="0" a="1" />
-		<entry type="usealpha" val="false" />
+		<entry type="usealpha" val="true" />
 	</settings>
 	<plugindata />
 </project>
