@@ -28,7 +28,7 @@ cbuffer PixelShaderSettings : register(b0) {
 #define ENABLE_BLUR             1
 #define ENABLE_GRAYSCALE        1
 #define ENABLE_REFRESHLINE      1
-#define ENABLE_SCANLINES        1
+#define ENABLE_SCANLINES        0
 #define ENABLE_TINT             1
 #define ENABLE_GRAIN            1
 #define ENABLE_BLACKLEVEL       1
@@ -62,20 +62,11 @@ cbuffer PixelShaderSettings : register(b0) {
 #define TINT_GREEN_2            float3(0.0, 1.0, 0.2)
 #define TINT_APPLE_IIc          float3(0.4, 1.0, 0.4) // P24 phpsphor
 #define TINT_GREEN_3            float3(0.0, 1.0, 0.4)
+#define TINT_WARM_1             float3(1.0, 0.9, 0.8)
+#define TINT_COOL_1             float3(0.8, 0.9, 1.0)
 
 // Settings - Gain
 #define GRAIN_INTENSITY         0.02
-
-// Configures the original behavior for tint
-#if ENABLE_TINT && !ENABLE_GRAYSCALE
-#undef ENABLE_GRAYSCALE
-#undef GRAYSCALE_INTENSITY
-#undef GRAYSCALE_GLEAM
-#undef GRAYSCALE_LUMINANCE
-#undef GRAYSCALE_LUMA
-#define ENABLE_GRAYSCALE 1
-#define GRAYSCALE_INTENSITY 1
-#endif
 
 // If you have Bloom enabled, it doesn't play well
 // with the way Gleam and Luma calculate grayscale
@@ -91,7 +82,7 @@ cbuffer PixelShaderSettings : register(b0) {
 // Provide a reasonable Blacklevel even if Tint isn't enabled
 #if ENABLE_BLACKLEVEL && !ENABLE_TINT
 #undef BLACKLEVEL_FLOOR
-#define BLACKLEVEL_FLOOR float3(0.1, 0.1, 0.1)
+#define BLACKLEVEL_FLOOR float3(0.05, 0.05, 0.05)
 #endif
 
 // All the DEBUG settings are optional
@@ -114,12 +105,10 @@ cbuffer PixelShaderSettings : register(b0) {
 #define SHOW_UV                 0
 #define SHOW_POS                0
 
-// Patches pos and uv coordinates to work for SHADERed or Windows Terminal
-// see "SHADERed\GeometryPatch.hlsl" for more details.
-PSInput patchGeometry(PSInput pin);
-
-// Used for Debug output only
 #if SHADERed
+// Must be inlined to the shader or it breaks single-step debugging
+PSInput patchCoordinates(PSInput pin);
+
 struct DebugOut {
   bool show;
   float4 color;
@@ -145,7 +134,7 @@ float4 bloom(float4 c, float2 uv)
   float4 bloom = c - shaderTexture.Sample(samplerState, uv + float2(-BLOOM_OFFSET, 0) * Scale);
   float4 bloom_mask = bloom * BLOOM_STRENGTH;
   //return bloom_mask;
-  return c + bloom_mask;
+  return saturate(c + bloom_mask);
 }
 #endif
 
@@ -179,7 +168,7 @@ float4 blur(float4 c, float2 uv)
   float4 blur = (blurH(c, uv) + blurV(c, uv)) / 2 - c;
   float4 blur_mask = blur * BLUR_STRENGTH;
   //return blur_mask;
-  return c + blur_mask;
+  return saturate(c + blur_mask);
 }
 #endif
 
@@ -223,13 +212,13 @@ float3 rgb2luma(float3 c)
 float4 grayscale(float4 color)
 {
   #if GRAYSCALE_INTENSITY
-  color.rgb = rgb2intensity(color.rgb);
+  color.rgb = saturate(rgb2intensity(color.rgb));
   #elif GRAYSCALE_GLEAM
-  color.rgb = rgb2gleam(color.rgb);
+  color.rgb = saturate(rgb2gleam(color.rgb));
   #elif GRAYSCALE_LUMINANCE
-  color.rgb = rgb2luminance(color.rgb);
+  color.rgb = saturate(rgb2luminance(color.rgb));
   #elif GRAYSCALE_LUMA
-  color.rgb = rgb2luma(color.rgb);
+  color.rgb = saturate(rgb2luma(color.rgb));
   #else // Error, strategy not defined
   color.rgb = float3(1.0, 0.0, 1.0) - color.rgb;
   #endif
@@ -244,17 +233,17 @@ float4 blacklevel(float4 color)
 	color.rgb -= BLACKLEVEL_FLOOR;
 	color.rgb = saturate(color.rgb);
 	color.rgb += BLACKLEVEL_FLOOR;
-	return color;
+	return saturate(color);
 }
 #endif
 
 #if ENABLE_REFRESHLINE
 float4 refreshLines(float4 c, float2 uv)
 {
-  float timeOver = fmod(Time / 5, 1);
+  float timeOver = fmod(Time / 5, 1.5) - 0.5;
   float refreshLineColorTint = timeOver - uv.y;
-  if(uv.y > timeOver && uv.y - 0.04 < timeOver ) c.rgb += (refreshLineColorTint * 2.0);
-  return c;
+  if(uv.y > timeOver && uv.y - 0.03 < timeOver ) c.rgb += (refreshLineColorTint * 2.0);
+  return saturate(c);
 }
 #endif
 
@@ -276,11 +265,11 @@ float4 scanlines(float4 color, float2 pos)
   // Remove the && false to draw scanlines everywhere.
   if (length(color.rgb) < 0.2 && false)
   {
-    return color + wave * 0.1;
+    return saturate(color + wave * 0.1);
   }
   else
   {
-    return color * wave;
+    return saturate(color * wave);
   }
 }
 // end - retro.hlsl
@@ -290,7 +279,7 @@ float4 scanlines(float4 color, float2 pos)
 float4 tint(float4 color)
 {
 	color.rgb *= TINT_COLOR;
-	return color;
+	return saturate(color);
 }
 #endif
 
@@ -326,25 +315,31 @@ float4 grain(float4 color, float2 uv)
   float grain = q * (a2 + (a1 * r2 + a0) / (r2 * r2 + b1 * r2 + b0));
   color.rgb += GRAIN_INTENSITY * grain;
 
-  return color;
+  return saturate(color);
 }
 #endif
 
 float4 main(PSInput pin) : SV_TARGET {
-  PSInput patchedPin = patchGeometry(pin);
-  // Use Pos and UV in the shader the same as we might use
+  // Use pos and uv in the shader the same as we might use
   // Time, Scale, Resolution, and Background. Unlike those,
   // they are local variables in this implementation and should
   // be passed to any functions using them.
-  float4 pos = patchedPin.pos;
-  float2 uv = patchedPin.uv;
-
-  // Patches in the debug output in SHADERed
+  
+  float4 pos = pin.pos;
+  float2 uv = pin.uv;
+  
   #if SHADERed
+  // Must be inlined to the shader or it breaks single-step debugging
+  // Patches the pin pos and uv
+  PSInput patchedPin = patchCoordinates(pin);
+  pos = patchedPin.pos;
+  uv = patchedPin.uv;
+
+  // Patches in the UV Debug output
   DebugOut debugOut = debug(pos, uv);
   if (debugOut.show) { return debugOut.color; }
   #endif
-  
+
 //-- Shader goes here --//
   #if ENABLE_CURVE
   uv = transformCurve(uv);
@@ -357,9 +352,11 @@ float4 main(PSInput pin) : SV_TARGET {
   if(uv.x < -0.015 || uv.y < -0.015) return float4(0.03, 0.03, 0.03, 1.0);
   if(uv.x >  1.015 || uv.y >  1.015) return float4(0.03, 0.03, 0.03, 1.0);
   // Screen Border
-  if(uv.x <  0.000 || uv.y <  0.000) return float4(0.00, 0.00, 0.00, 1.0);
-  if(uv.x >  1.000 || uv.y >  1.000) return float4(0.00, 0.00, 0.00, 1.0);
+  if(uv.x < -0.001 || uv.y < -0.001) return float4(0.00, 0.00, 0.00, 1.0);
+  if(uv.x >  1.001 || uv.y >  1.001) return float4(0.00, 0.00, 0.00, 1.0);
   #endif
+  
+  uv = saturate(uv);
   
   // If no options are selected, this will just display as normal
   float4 color = shaderTexture.Sample(samplerState, uv).rgba;
@@ -400,19 +397,7 @@ float4 main(PSInput pin) : SV_TARGET {
 //-- Shader goes here --//
 }
 
-// Below is SHADERed patching code to support coordinate transformation
-// and debug.
 #if SHADERed
-#include "SHADERed/GeometryPatch.hlsl"
-#include "SHADERed/Debug.hlsl"
-#else
-// If we aren't in SHADERed, we want to leave the PSInput structure
-// unchanged. However, it makes things easier to read if we perform
-// a pass through this function anyway. This is an identity function
-// used to keep a lot of the #if SHADERed checks outside the shader
-// we pass to Windows Terminal.
-PSInput patchGeometry(PSInput pin)
-{
-  return pin;
-}
+#include "SHADERed/PS-DebugPatch.hlsl"
+#include "SHADERed/PS-CoordinatesPatch.hlsl"
 #endif
