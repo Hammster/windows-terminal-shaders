@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<project version="2">
+	<pipeline>
+		<pass name="WindowsTerminal" type="shader" active="true" patchverts="1">
+			<shader type="vs" path="SHADERed\VS.hlsl" entry="main" />
+			<shader type="ps" path="demonstration.hlsl" entry="main" />
+			<inputlayout>
+				<item value="Position" semantic="POSITION" />
+				<item value="Texcoord" semantic="TEXCOORD0" />
+			</inputlayout>
+			<rendertexture />
+			<items>
+				<item name="Screen" type="geometry">
+					<type>ScreenQuadNDC</type>
+					<width>1</width>
+					<height>1</height>
+					<depth>1</depth>
+					<topology>TriangleList</topology>
+				</item>
+			</items>
+			<itemvalues>
+				<value variable="Time" for="Screen">
+					<row>
+						<value>0.0</value>
+					</row>
+				</value>
+				<value variable="Scale" for="Screen">
+					<row>
+						<value>1</value>
+					</row>
+				</value>
+				<value variable="Resolution" for="Screen">
+					<row>
+						<value>647</value>
+						<value>393</value>
+					</row>
+				</value>
+				<value variable="Background" for="Screen">
+					<row>
+						<value>0</value>
+						<value>0</value>
+						<value>0</value>
+						<value>0</value>
+					</row>
+				</value>
+			</itemvalues>
+			<variables>
+				<variable type="float" name="Time" system="Time" />
+				<variable type="float" name="Scale">
+					<row>
+						<value>1</value>
+					</row>
+				</variable>
+				<variable type="float2" name="Resolution" system="ViewportSize" />
+				<variable type="float4" name="Background">
+					<row>
+						<value>0</value>
+						<value>0</value>
+						<value>0</value>
+						<value>0</value>
+					</row>
+				</variable>
+			</variables>
+			<macros>
+				<define name="SHADERed" active="true">1</define>
+			</macros>
+		</pass>
+	</pipeline>
+	<objects>
+		<object type="texture" path="SHADERed\sample.png" vflip="true" min_filter="Linear" mag_filter="Nearest" wrap_s="ClampToEdge" wrap_t="ClampToEdge">
+			<bind slot="0" name="WindowsTerminal" />
+		</object>
+	</objects>
+	<cameras />
+	<settings>
+		<entry type="property" name="WindowsTerminal" item="pipe" />
+		<entry type="file" name="WindowsTerminal" shader="ps" />
+		<entry type="pinned" name="Scale" owner="WindowsTerminal" />
+		<entry type="pinned" name="Background" owner="WindowsTerminal" />
+		<entry type="camera" fp="false">
+			<distance>5</distance>
+			<pitch>-83</pitch>
+			<yaw>295</yaw>
+			<roll>360</roll>
+		</entry>
+		<entry type="clearcolor" r="0" g="0" b="0" a="1" />
+		<entry type="usealpha" val="true" />
+	</settings>
+	<plugindata />
+</project>
