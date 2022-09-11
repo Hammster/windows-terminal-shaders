@@ -61,7 +61,7 @@ static const vec4 unit4 = vec4(1.0, 1.0, 1.0, 1.0);
 #if defined(FASTATAN)
 #define ATAN atan_approx
 #else
-#define ATAN atan
+#define ATAN atan2
 #endif
 
 // License: WTFPL, author: sam hocevar, found: https://stackoverflow.com/a/17897228/418488
