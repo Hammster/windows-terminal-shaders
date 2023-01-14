@@ -34,6 +34,9 @@ cbuffer PixelShaderSettings : register(b0) {
 #define ENABLE_TINT             1
 #define ENABLE_GRAIN            1
 
+// Settings - Curve
+#define CURVE_INTENSITY         1
+
 // Settings - Overscan
 #define OVERSCAN_PERCENTAGE     0.02
 
@@ -122,9 +125,8 @@ DebugOut debug(float4 pos, float2 uv);
 
 #if ENABLE_CURVE
 float2 transformCurve(float2 uv) {
-  // TODO: add control variable for transform intensity
   uv -= 0.5;				// offcenter screen
-  float r = uv.x * uv.x + uv.y * uv.y; 	// get ratio
+  float r = (uv.x * uv.x + uv.y * uv.y) * CURVE_INTENSITY; 	// get ratio
   uv *= 4.2 + r;				// apply ratio
   uv *= 0.25;				// zoom
   uv += 0.5;				// move back to center
