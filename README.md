@@ -93,7 +93,7 @@ When using a monochorme tint, there should be some considerations made. The Vint
 
 ```c++
 // Settings - Curve (crt.hlsl only)
-#define CURVE_INTENSITY         1 // Increases or decreases the intensity of the curve
+#define CURVE_INTENSITY         1 // Increases or decreases the intensity of the curve. Ex: 0.5 = half intensity, 2 = double intensity
 
 // Settings - Overscan
 #define OVERSCAN_PERCENTAGE     0.02
