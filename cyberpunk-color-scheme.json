@@ -1,0 +1,27 @@
+{
+  "schemes": [
+    {
+      "name": "Cyberpunk 2077 Dark",
+      "background": "#0E0E17",
+      "foreground": "#D6D0D0",
+      "cursorColor": "#5EF6FF",
+      "selectionBackground": "#481E24",
+      "black": "#403E45",
+      "red": "#F75049",
+      "green": "#1DED83",
+      "yellow": "#F0B537",
+      "blue": "#2570D4",
+      "purple": "#9D2BF5",
+      "cyan": "#5EF6FF",
+      "white": "#D6D0D0",
+      "brightBlack": "#7C797D",
+      "brightRed": "#FB932E",
+      "brightGreen": "#61F2A8",
+      "brightYellow": "#FCEE0A",
+      "brightBlue": "#669BE1",
+      "brightPurple": "#BA6BF8",
+      "brightCyan": "#8EF9FF",
+      "brightWhite": "#FFFFFF"
+    }
+  ]
+}

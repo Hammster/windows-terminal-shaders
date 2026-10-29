@@ -1,0 +1,50 @@
+{
+  "schemes": [
+    {
+      "name": "Fallout Terminal Color",
+      "background": "#20251D",
+      "foreground": "#E7EBDF",
+      "cursorColor": "#F5FFD7",
+      "selectionBackground": "#3B7D40",
+      "black": "#070A08",
+      "red": "#F23D21",
+      "green": "#28E956",
+      "yellow": "#E8B918",
+      "blue": "#1687B8",
+      "purple": "#A63C8C",
+      "cyan": "#18C48E",
+      "white": "#D9DDCF",
+      "brightBlack": "#59665A",
+      "brightRed": "#FF5A32",
+      "brightGreen": "#55FF75",
+      "brightYellow": "#FFD52B",
+      "brightBlue": "#25B4E6",
+      "brightPurple": "#DF55B9",
+      "brightCyan": "#2CF4B3",
+      "brightWhite": "#FFFFFF"
+    },
+    {
+      "name": "Fallout Terminal Light",
+      "background": "#EEF2EC",
+      "foreground": "#182318",
+      "cursorColor": "#285F2B",
+      "selectionBackground": "#C1D0BE",
+      "black": "#0B100C",
+      "red": "#9D241F",
+      "green": "#176426",
+      "yellow": "#715600",
+      "blue": "#185B7A",
+      "purple": "#712B60",
+      "cyan": "#00645B",
+      "white": "#596357",
+      "brightBlack": "#566052",
+      "brightRed": "#B82B24",
+      "brightGreen": "#1D7730",
+      "brightYellow": "#856500",
+      "brightBlue": "#1B6D91",
+      "brightPurple": "#873573",
+      "brightCyan": "#00776C",
+      "brightWhite": "#263226"
+    }
+  ]
+}
