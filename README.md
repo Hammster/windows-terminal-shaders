@@ -303,6 +303,116 @@ Curved glass is also reduced automatically in `fallout-terminal.hlsl`; the
 flat variant keeps its zero inset. `ENABLE_GLITCHES` and `ENABLE_VIGNETTE`
 remain independent toggles and stay set to `0` by default.
 
+## [Cyberpunk 2077 Neon](./cyberpunk-terminal.hlsl)
+
+A dark Cyberpunk 2077 inspired theme: an ANSI palette built on the official UI
+style guide colors and a flat neon display shader with glow, RGB split, short
+digital glitch bursts, and a scanner sweep. The implementation is original and
+does not use game assets.
+
+### Color palette
+
+[`cyberpunk-color-scheme.json`](./cyberpunk-color-scheme.json) contains the
+`Cyberpunk 2077 Dark` scheme. Its colors come from the "Colours" pages of the
+CD PROJEKT RED user interface style guide published in
+[Cyberpunk 2077 User Interface (Part 2)](https://www.behance.net/gallery/133185623/Cyberpunk-2077User-Interface-%28Part-2%29).
+The guide defines a main palette of red, cyan, white, and darkest blue, and a
+secondary palette of item rarity colors.
+
+| Guide color | Hex | Palette | Used for |
+| ----------- | --- | ------- | -------- |
+| Red | `#F75049` | Main | Red, selection tint, shader glitch accent |
+| Cyan | `#5EF6FF` | Main | Cyan, cursor, scanner sweep |
+| White | `#FFFFFF` | Main | Bright white |
+| Darkest Blue | `#0E0E17` | Main | Background |
+| Grey | `#D6D0D0` | Secondary | Foreground, white |
+| Green (Mint Jungle) | `#1DED83` | Secondary | Green |
+| Blue (Yale Steel) | `#2570D4` | Secondary | Blue |
+| Violet Purple | `#9D2BF5` | Secondary | Purple |
+| Orange | `#FB932E` | Secondary | Bright red |
+| Yellow (Gold) | `#F0B537` | Secondary | Yellow |
+
+The guide lists Gold as `RGB 241 / 181 / 55` but `HEX #F0B537`; the scheme uses
+the published hex value.
+
+The guide has a single value per hue, so the remaining slots are mixes of guide
+colors rather than new colors: bright variants add 30% guide white, black and
+bright black are 25% and 55% grey over darkest blue, and the selection is 25%
+red over darkest blue,
+like the translucent red panels of the game's interface.
+
+Bright yellow is the one color from outside the UI guide: the Cyberpunk 2077
+brand yellow. CD PROJEKT RED identifies it as Pantone 3945C
+([@CyberpunkGame](https://x.com/CyberpunkGame/status/1334549130069368835)), and
+`#FCEE0A` is its `.yellow` value on the official site,
+[cyberpunk.net](https://www.cyberpunk.net/).
+
+| UI color | Value | Source |
+| -------- | ----- | ------ |
+| Background | `#0E0E17` | Darkest Blue |
+| Foreground | `#D6D0D0` | Grey |
+| Cursor | `#5EF6FF` | Cyan |
+| Selection | `#481E24` | 25% Red over Darkest Blue |
+
+| ANSI color | Normal | Bright |
+| ---------- | ------ | ------ |
+| Black | `#403E45` 25% Grey over Darkest Blue | `#7C797D` 55% Grey over Darkest Blue |
+| Red | `#F75049` Red | `#FB932E` Orange |
+| Green | `#1DED83` Mint Jungle | `#61F2A8` Mint Jungle + 30% White |
+| Yellow | `#F0B537` Gold | `#FCEE0A` Brand yellow |
+| Blue | `#2570D4` Yale Steel | `#669BE1` Yale Steel + 30% White |
+| Purple | `#9D2BF5` Violet Purple | `#BA6BF8` Violet Purple + 30% White |
+| Cyan | `#5EF6FF` Cyan | `#8EF9FF` Cyan + 30% White |
+| White | `#D6D0D0` Grey | `#FFFFFF` White |
+
+Guide colors are used unchanged, so normal blue and purple have contrast ratios
+of 3.97:1 and 3.75:1 against the background; their bright variants reach
+6.7:1 and 6.0:1. ANSI black is lighter than the background (1.8:1) so black
+text and black panels stay visible, while dark text on yellow, cyan, gold, and
+green prompt segments keeps at least a 5.7:1 contrast ratio. Bright red uses the guide's
+orange, following the same red-to-orange convention as Solarized. Preview the
+palette with `./show-cyberpunk-palette.ps1`.
+
+### Installation
+
+The included installer adds the scheme, creates a timestamped settings backup,
+and selects both the scheme and the shader for the default profile:
+
+```powershell
+.\install-cyberpunk-terminal.ps1
+```
+
+Or add the scheme to the `schemes` array in Windows Terminal's
+`settings.json` manually and set it on a profile:
+
+```json
+{
+  "colorScheme": "Cyberpunk 2077 Dark",
+  "experimental.pixelShaderPath": "C:\\path\\to\\cyberpunk-terminal.hlsl"
+}
+```
+
+Open a new tab after changing the path so Windows Terminal loads the shader.
+Run `.\install-fallout-terminal.ps1` to switch back to the Fallout theme.
+
+### Effects
+
+| Effect | Setting | Description |
+| ------ | ------- | ----------- |
+| Neon glow | `ENABLE_NEON_GLOW` | Adds a two-ring halo around bright glyphs that keeps their hue. |
+| RGB split | `ENABLE_RGB_SPLIT` | Separates the red and blue channels horizontally by a fraction of a pixel. |
+| Glitch bursts | `ENABLE_GLITCHES` | Occasionally shifts random horizontal bands for a fraction of a second and repaints them in red or cyan. |
+| Scanlines | `ENABLE_SCANLINES` | Adds thin display rows instead of a heavy CRT raster. |
+| Scanner sweep | `ENABLE_SCAN_SWEEP` | Moves a thin cyan scanner line down the screen at a fixed interval. |
+| Neon flicker | `ENABLE_NEON_FLICKER` | Makes the glow buzz and stutter slightly while the glyphs stay steady. |
+| Noise | `ENABLE_NOISE` | Applies faint animated digital noise. |
+| Vignette | `ENABLE_VIGNETTE` | Darkens the screen corners. Disabled by default. |
+
+Glitch offsets, glow radius, and scanline spacing are expressed in screen pixels
+and follow the display scale. Set `CYBERPUNK_SUBTLE_PRESET` to `1` near the top
+of the shader for a calmer daily-use preset with weaker effects and rarer glitch
+bursts.
+
 ## [Transparent](./transparent.hlsl)
 
 Turn a specific color into transparent for use with `useAcrylic` and `acrylicOpacity` when xterm colors are enabled, like in vim themes.
